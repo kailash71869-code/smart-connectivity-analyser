@@ -210,7 +210,9 @@ Make sure the backend is running before using frontend features that require API
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/health` | Check backend health |
+| GET | `/api/health` | Check backend service health |
+| GET | `/api/health/live` | Lightweight liveness probe confirming API process is running (`/healthz`, `/api/live`) |
+| GET | `/api/health/ready` | Readiness probe verifying dependencies availability without heavy diagnostics (`/readyz`, `/api/ready`) |
 | GET | `/api/ping` | Check basic API connectivity |
 | GET | `/api/network-quality` | Measure network quality using the backend ping test |
 | POST | `/api/network-test` | Submit/save a network test record |

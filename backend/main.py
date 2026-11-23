@@ -531,25 +531,77 @@ def root():
 
 
 # ============================================================
-
-# HEALTH CHECK
-
+# HEALTH & READINESS ENDPOINTS
 # ============================================================
 
+def check_database_readiness():
+    try:
+        connection = get_connection()
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+            return True, "connected"
+        finally:
+            connection.close()
+    except Exception:
+        return False, "unavailable"
+
+
+def check_ai_readiness():
+    if AI_MODELS_READY:
+        return "ready"
+    if torch is None:
+        return "unavailable"
+    return "degraded"
 
 
 @app.get("/api/health")
-
 def health():
+    return {
+        "status": "ok",
+        "service": "Smart Internet Connectivity Analyser"
+    }
 
 
+@app.get("/api/health/live")
+@app.get("/api/live")
+@app.get("/healthz")
+def liveness():
+    """Lightweight liveness probe confirming that the API process responds."""
+    return {
+        "status": "alive"
+    }
+
+
+@app.get("/api/health/ready")
+@app.get("/api/ready")
+@app.get("/readyz")
+def readiness():
+    """
+    Readiness probe verifying essential dependencies (database, etc.)
+    without running expensive network diagnostics or model training.
+    """
+    db_ok, db_status = check_database_readiness()
+    ai_status = check_ai_readiness()
+
+    dependencies = {
+        "database": db_status,
+        "ai_engine": ai_status
+    }
+
+    if not db_ok:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unavailable",
+                "dependencies": dependencies
+            }
+        )
 
     return {
-
-        "status": "ok",
-
-        "service": "Smart Internet Connectivity Analyser"
-
+        "status": "ready",
+        "dependencies": dependencies
     }
 
 
